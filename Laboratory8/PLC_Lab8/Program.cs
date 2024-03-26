@@ -28,7 +28,7 @@ namespace PLC_Lab8
 
             if (parser.NumberOfSyntaxErrors == 0)
             {
-                //Console.WriteLine(tree.ToStringTree(parser));
+                Console.WriteLine(tree.ToStringTree(parser));
 
                 new EvalVisitor().Visit(tree);
             }
