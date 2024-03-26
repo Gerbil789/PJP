@@ -1,0 +1,8 @@
+﻿int a,b;
+a = b = 15;
+a + b;
+float c;
+c = a + b;
+c + a;
+a = c;
+c + 1.1;
