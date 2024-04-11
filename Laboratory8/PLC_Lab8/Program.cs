@@ -14,7 +14,7 @@ namespace PLC_Lab8
         public static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
-            var fileName = "input.txt";
+            var fileName = "inputs/input1.txt";
             Console.WriteLine("Parsing: " + fileName);
             var inputFile = new StreamReader(fileName);
             AntlrInputStream input = new AntlrInputStream(inputFile);
@@ -28,7 +28,7 @@ namespace PLC_Lab8
 
             if (parser.NumberOfSyntaxErrors == 0)
             {
-                //Console.WriteLine(tree.ToStringTree(parser));
+                Console.WriteLine(tree.ToStringTree(parser));
 
                 new EvalVisitor().Visit(tree);
             }

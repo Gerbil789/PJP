@@ -8,6 +8,6 @@ namespace PLC_Lab8
 {
     public enum Type
     {
-        Int, Float, Error
+        Int, Float, Error, Valid
     }
 }
