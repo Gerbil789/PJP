@@ -1,4 +1,9 @@
-﻿write "<Constants>";
+﻿int n;
+float d;
+char c;
+bool b;
+
+write "<Constants>";
 write "10: ",10;
 write " 1.25: ", 1.25;
 write "";;
