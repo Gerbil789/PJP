@@ -1,9 +1,5 @@
 ﻿using Antlr4.Runtime;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Project
 {
@@ -20,14 +16,16 @@ namespace Project
             }
             else
             {
-                if (type == Type.Int)
-                    memory.Add(name, (type, 0));
-                else if (type == Type.Float)
-                    memory.Add(name, (type, (float)0));
-                else if (type == Type.String)
-                    memory.Add(name, (type, ""));
-                else
-                    memory.Add(name, (type, false));
+                object value = type switch
+                {
+                    Type.Int => 0,
+                    Type.Float => (float)0,
+                    Type.String => "",
+                    Type.Boolean => false,
+                    _ => throw new System.Exception("Invalid type"),
+                };
+
+                memory.Add(name, (type, value));
             }
         }
         public (Type Type, object Value) this[IToken variable]

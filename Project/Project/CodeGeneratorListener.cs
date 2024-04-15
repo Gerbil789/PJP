@@ -139,7 +139,6 @@ namespace Project
             code.Put(context, code.Get(context.expr()));
         }
 
-        // OPERATORS
         bool first = true;
         string firstText = "";
         public override void ExitAssignment([NotNull] project_grammarParser.AssignmentContext context)

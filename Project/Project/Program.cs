@@ -10,7 +10,7 @@ namespace Project
 {
     public class Program
     {
-        static string fileName = "input5.txt";
+        static string fileName = "input3.txt";
         public static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
@@ -42,8 +42,8 @@ namespace Project
             walker.Walk(new CodeGeneratorListener(), tree);
 
             Console.WriteLine("\n------------------INTERPRETER----------------\n");
-            Interpreter vm = new Interpreter("output.txt");
-            vm.Run();
+            Interpreter interpreter = new Interpreter("output.txt");
+            interpreter.Run();
         }
     }
 }

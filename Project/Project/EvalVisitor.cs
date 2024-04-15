@@ -540,7 +540,6 @@ namespace Project
 
                 if (valueOfExpr.Type != Type.Error)
                     Console.Write(valueOfExpr.Value);
-                //Console.Write(" ");
             }
             Console.Write("\n");
 

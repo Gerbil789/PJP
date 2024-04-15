@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Project
 {
@@ -13,7 +10,108 @@ namespace Project
         private List<string> code = new List<string>();
         Dictionary<string, (Type type, object value)> memory = new Dictionary<string, (Type type, object value)>();
         Stack<(Type type, object value)> stack = new Stack<(Type type, object value)>();
+        public void Run()
+        {
+            int current = 0;
+            while (current < code.Count)
+            {
+                var command = code[current].Split(" ");
 
+                if (command[0] == "jmp")
+                {
+                    var to = int.Parse(command[1]);
+                    current = labels[to];
+                }
+                else if (command[0] == "fjmp")
+                {
+                    var value = stack.Pop();
+                    if ((bool)value.value)
+                    {
+                        current++;
+                    }
+                    else
+                    {
+                        current = labels[int.Parse(command[1])];
+                    }
+                }
+                else
+                {
+                    switch (command[0])
+                    {
+                        case "label":
+                            break;
+                        case "load":
+                            Load(command[1]);
+                            break;
+                        case "save":
+                            Save(command[1]);
+                            break;
+                        case "print":
+                            var n = int.Parse(command[1]);
+                            Print(n);
+                            break;
+                        case "read":
+                            var type = command[1];
+                            Read(type);
+                            break;
+                        case "pop":
+                            stack.Pop();
+                            break;
+                        case "push":
+                            type = command[1];
+                            var obj = command[2];
+                            if (type == "S")
+                                for (int i = 3; i < command.Length; i++)
+                                    obj += " " + command[i];
+                            Push(type, obj);
+                            break;
+                        case "itof":
+                            Itof();
+                            break;
+                        case "not":
+                            Not();
+                            break;
+                        case "eq":
+                            Eq();
+                            break;
+                        case "lt":
+                            Lt();
+                            break;
+                        case "gt":
+                            Gt();
+                            break;
+                        case "or":
+                            Or();
+                            break;
+                        case "and":
+                            And();
+                            break;
+                        case "concat":
+                            Concat();
+                            break;
+                        case "uminus":
+                            Uminus();
+                            break;
+                        case "mod":
+                            Mod();
+                            break;
+                        case "div":
+                            Div();
+                            break;
+                        case "mul":
+                            Mul();
+                            break;
+                        case "sub":
+                            Sub();
+                            break;
+                        case "add":
+                            Add();
+                            break;
+                    }
+                    current++;
+                } 
+            }
+        }
         public Interpreter(string filename)
         {
             var input = File.ReadAllLines(filename);
@@ -36,7 +134,6 @@ namespace Project
             if(memory.ContainsKey(name))
             {
                 stack.Push(memory[name]);
-                //return memory[name];
             }else
                 throw new Exception($"Variable {name} was not initialized");
         }
@@ -57,7 +154,7 @@ namespace Project
             {
                 Console.Write(item);
             }
-            Console.Write("\n");
+            Console.WriteLine();
         }
         private void Read(string type)
         {
@@ -143,7 +240,6 @@ namespace Project
         private void Itof()
         {
             var value = stack.Pop();
-
             if (value.type == Type.Int)
                 stack.Push((Type.Float, (float)(Convert.ToInt32(value.value))));
             else
@@ -247,7 +343,7 @@ namespace Project
             {
                 case Type.String:
                     {
-                        stack.Push((Type.String, (string)leftValue.value + (string)rightValue.value));
+                        stack.Push((Type.String, $"{(string)leftValue.value}{(string)rightValue.value}"));
                     }
                     break;
             }
@@ -347,122 +443,6 @@ namespace Project
                         stack.Push((Type.Int, (int)leftValue.value - (int)rightValue.value));
                     }
                     break;
-            }
-        }
-        public void Run()
-        {
-            int actual = 0;
-            while(actual < code.Count)
-            {
-                var command = code[actual].Split(" ");
-                if(command[0].Equals("jmp"))
-                {
-                    var to = int.Parse(command[1]);
-                    actual = labels[to];
-                }
-                else if (command[0].Equals("fjmp"))
-                {
-                    var value = stack.Pop();
-                    if((bool)value.value)
-                    {
-                        actual++;
-                    }
-                    else
-                    {
-                        actual = labels[int.Parse(command[1])];
-                    }
-                }
-                else if (command[0].Equals("label"))
-                {
-                    actual++;
-                }else if (command[0].Equals("load"))
-                {
-                    Load(command[1]);
-                    actual++;
-                }else if (command[0].Equals("save"))
-                {
-                    Save(command[1]);
-                    actual++;
-                }else if (command[0].Equals("print"))
-                {
-                    var n = int.Parse(command[1]);
-                    Print(n);
-                    actual++;
-                }else if (command[0].Equals("read"))
-                {
-                    var type = command[1];
-                    Read(type);
-                    actual++;
-                }else if (command[0].Equals("pop"))
-                {
-                    stack.Pop();
-                    actual++;
-                }else if (command[0].Equals("push"))
-                {
-                    var type = command[1];
-                    var obj = command[2];
-                    if(type == "S")
-                        for (int i = 3; i < command.Length; i++)
-                            obj += " " + command[i];
-                    Push(type, obj);
-                    actual++;
-                }else if (command[0].Equals("itof"))
-                {
-                    Itof();
-                    actual++;
-                }else if (command[0].Equals("not"))
-                {
-                    Not();
-                    actual++;
-                }else if (command[0].Equals("eq"))
-                {
-                    Eq();
-                    actual++;
-                }else if (command[0].Equals("lt"))
-                {
-                    Lt();
-                    actual++;
-                }else if (command[0].Equals("gt"))
-                {
-                    Gt();
-                    actual++;
-                }else if (command[0].Equals("or"))
-                {
-                    Or();
-                    actual++;
-                }else if (command[0].Equals("and"))
-                {
-                    And();
-                    actual++;
-                }else if (command[0].Equals("concat"))
-                {
-                    Concat();
-                    actual++;
-                }else if (command[0].Equals("uminus"))
-                {
-                    Uminus();
-                    actual++;
-                }else if (command[0].Equals("mod"))
-                {
-                    Mod();
-                    actual++;
-                }else if (command[0].Equals("div"))
-                {
-                    Div();
-                    actual++;
-                }else if (command[0].Equals("mul"))
-                {
-                    Mul();
-                    actual++;
-                }else if (command[0].Equals("sub"))
-                {
-                    Sub();
-                    actual++;
-                }else if (command[0].Equals("add"))
-                {
-                    Add();
-                    actual++;
-                }
             }
         }
     }

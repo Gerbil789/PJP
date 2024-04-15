@@ -47,3 +47,12 @@ if(true){
 	write "Hello";
 }
 
+write "STRINGS";
+string s, u, p;
+s = "Hello";
+u = "World";
+write s;
+write u;
+p = s." ".u;
+write p;
+
