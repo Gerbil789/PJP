@@ -1,0 +1,49 @@
+﻿write "ARITHMETICS";
+int x, y, z;
+x = 10;
+y = 20;
+z = x + y;
+write x;
+write y;
+write z;
+
+z = x - y;
+write z;
+
+z = x * y;
+write z;
+
+z = x / y;
+write z;
+
+write "COMPARISONS";
+if (x == y) {
+	write "x == y";
+} else {
+	write "x != y";
+}
+
+if (x > y){
+	write "x > y";
+} else {
+	write "x <= y";
+}
+
+write "BOOLS";
+bool a, b;
+a = true;
+b = false;
+if (a && b) {
+	write "a && b";
+} else {
+	write "!(a && b)";
+}
+
+write "TEST";
+if(true){
+	write "Hello";
+	write "Hello";
+	write "Hello";
+	write "Hello";
+}
+

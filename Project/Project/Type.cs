@@ -8,6 +8,6 @@ namespace Project
 {
     public enum Type
     {
-        Int, Float, Error
+        Int, Float, String, Boolean, Error, Empty
     }
 }

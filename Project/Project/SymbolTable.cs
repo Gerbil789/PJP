@@ -20,8 +20,14 @@ namespace Project
             }
             else
             {
-                if (type == Type.Int) memory.Add(name, (type, 0));
-                else memory.Add(name, (type, (float)0));
+                if (type == Type.Int)
+                    memory.Add(name, (type, 0));
+                else if (type == Type.Float)
+                    memory.Add(name, (type, (float)0));
+                else if (type == Type.String)
+                    memory.Add(name, (type, ""));
+                else
+                    memory.Add(name, (type, false));
             }
         }
         public (Type Type, object Value) this[IToken variable]
