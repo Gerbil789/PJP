@@ -37,13 +37,10 @@ namespace Project
             }
 
 
-            Console.WriteLine("\n----------------CODE GENERATION--------------\n");
+            Console.WriteLine("\n----------------MACHINE CODE--------------\n");
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.Walk(new CodeGeneratorListener(), tree);
 
-            Console.WriteLine("\n------------------INTERPRETER----------------\n");
-            Interpreter interpreter = new Interpreter("output.txt");
-            interpreter.Run();
         }
     }
 }

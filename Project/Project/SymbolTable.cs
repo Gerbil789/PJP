@@ -5,7 +5,7 @@ namespace Project
 {
     public class SymbolTable
     {
-        Dictionary<string, (Type Type, object Value)> memory = new Dictionary<string, (Type Type, object Value)>();
+        Dictionary<string, Type> memory = new Dictionary<string, Type>();
 
         public void Add(IToken variable, Type type)
         {
@@ -25,10 +25,10 @@ namespace Project
                     _ => throw new System.Exception("Invalid type"),
                 };
 
-                memory.Add(name, (type, value));
+                memory.Add(name, type);
             }
         }
-        public (Type Type, object Value) this[IToken variable]
+        public Type this[IToken variable]
         {
             get {
                 var name = variable.Text.Trim();
@@ -38,7 +38,7 @@ namespace Project
                 }else
                 {
                     Errors.ReportError(variable, $"Variable {name} was NOT declared.");
-                    return (Type.Error,0);
+                    return Type.Error;
                 }
             }
             set
