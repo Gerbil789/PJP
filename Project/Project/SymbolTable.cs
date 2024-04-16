@@ -16,14 +16,14 @@ namespace Project
             }
             else
             {
-                object value = type switch
-                {
-                    Type.Int => 0,
-                    Type.Float => (float)0,
-                    Type.String => "",
-                    Type.Boolean => false,
-                    _ => throw new System.Exception("Invalid type"),
-                };
+                //object value = type switch
+                //{
+                //    Type.Int => 0,
+                //    Type.Float => (float)0,
+                //    Type.String => "",
+                //    Type.Boolean => false,
+                //    _ => throw new System.Exception("Invalid type"),
+                //};
 
                 memory.Add(name, type);
             }

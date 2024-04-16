@@ -10,34 +10,35 @@ namespace Project
 {
     public class Program
     {
-        static string fileName = "input3.txt";
+        static string fileName = "input4.txt";
         public static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
-            Console.WriteLine($"Parsing: {fileName}");
             var inputFile = new StreamReader(fileName);
             AntlrInputStream input = new AntlrInputStream(inputFile);
             project_grammarLexer lexer = new(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             project_grammarParser parser = new(tokens);
             parser.AddErrorListener(new VerboseListener());
+
+
+            Console.WriteLine("----------------SYNTAX ERRORS--------------");
             IParseTree tree = parser.program();
-
+           
             if (parser.NumberOfSyntaxErrors != 0)
-            {
-                Console.WriteLine("Syntax errors found. Exiting program.");
                 return;
-            }
+            else
+                Console.WriteLine("No syntax errors");
 
-            var typeCheck = new EvalVisitor().Visit(tree);
-            if (typeCheck.Type == Type.Error)
-            {
-                Console.WriteLine("Type errors found. Exiting program.");
+
+            Console.WriteLine("\n----------------TYPE ERRORS--------------");
+            if (new EvalVisitor().Visit(tree) == Type.Error) 
                 return;
-            }
+            else
+                Console.WriteLine("No type errors");
 
 
-            Console.WriteLine("\n----------------MACHINE CODE--------------\n");
+            Console.WriteLine("\n----------------MACHINE CODE--------------");
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.Walk(new CodeGeneratorListener(), tree);
 
