@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>disabled</ImplicitUsings>
-    <StartupObject>Project.Program</StartupObject>
+    <StartupObject>PJP_Project.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

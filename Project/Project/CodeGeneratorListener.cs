@@ -1,31 +1,30 @@
 ﻿using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
-using PJP_Project;
 using System;
 using System.IO;
 
-namespace Project
+namespace PJP_Project
 {
     internal class CodeGeneratorListener : project_grammarBaseListener
     {
-        SymbolTable symbolTable = new SymbolTable();
-        ParseTreeProperty<string> code = new ParseTreeProperty<string>();
-        ParseTreeProperty<(Type type, object value)> values = new ParseTreeProperty<(Type type, object value)>();
-        
-        bool first = true; //check if it is the first assignment
-        string firstText = ""; //store the first assignment
+        public ParseTreeProperty<string> code = new();
+        private SymbolTable symbolTable;
+        private ParseTreeProperty<Type> types;
 
-        int label = 0; //unique label generator
+        private bool first = true; //check if it is the first assignment
+        private string firstText = ""; //store the first assignment
+        private int label = 0; //unique label generator
+
+        public CodeGeneratorListener(ParseTreeProperty<Type> types, SymbolTable symbolTable)
+        {
+            this.types = types;
+            this.symbolTable = symbolTable;
+        }
+
         private int GenerateUniqueLabel()
         {
             return label++;
         }
-        private float ToFloat(object value)
-        {
-            if (value is int x) return (float)x;
-            return (float)value;
-        }
-
 
         public override void EnterAssignment([NotNull] project_grammarParser.AssignmentContext context)
         {
@@ -37,63 +36,41 @@ namespace Project
         }
         public override void ExitId([NotNull] project_grammarParser.IdContext context)
         {
-            code.Put(context, "load " + context.IDENTIFIER().GetText() + "\n");
-            values.Put(context, (symbolTable[context.IDENTIFIER().Symbol], context.IDENTIFIER().GetText()));
+            code.Put(context, $"load {context.IDENTIFIER().GetText()}\n");
         }
         public override void ExitBool([NotNull] project_grammarParser.BoolContext context)
         {
             var value = context.GetText();
             code.Put(context, $"push B {value}\n");
-            if (value.Equals("true"))
-                values.Put(context, (Type.Boolean, true));
-            else
-                values.Put(context, (Type.Boolean, false));
         }
         public override void ExitFloat([NotNull] project_grammarParser.FloatContext context)
         {
             var value = Convert.ToDouble(context.FLOAT().GetText());
-            code.Put(context, $"push F {value}\n");
-            values.Put(context, (Type.Float, float.Parse(context.FLOAT().GetText())));
+            code.Put(context, $"push F {value:0.0#####}\n");
         }
         public override void ExitInt([NotNull] project_grammarParser.IntContext context)
         {
             var value = Convert.ToInt32(context.INT().GetText(), 10);
             code.Put(context, $"push I {value}\n");
-            values.Put(context, (Type.Int, int.Parse(context.INT().GetText())));
         }
         public override void ExitString([NotNull] project_grammarParser.StringContext context)
         {
             var value = context.STRING().GetText();
             code.Put(context, $"push S {value}\n");
-            values.Put(context, (Type.String, context.STRING().GetText().Replace("\"", String.Empty)));
         }
         public override void ExitPrimitiveType([NotNull] project_grammarParser.PrimitiveTypeContext context)
         {
-            if (context.type.Text.Equals("int"))
+            code.Put(context, context.type.Text switch
             {
-                values.Put(context, (Type.Int, 0));
-                code.Put(context, $"push I 0\n");
-            }
-            else if (context.type.Text.Equals("float"))
-            {
-                values.Put(context, (Type.Float, 0.0));
-                code.Put(context, $"push F 0.0\n");
-            }
-            else if (context.type.Text.Equals("string"))
-            {
-                values.Put(context, (Type.String, ""));
-                code.Put(context, $"push S \"\"\n");
-            }
-            else
-            {
-                values.Put(context, (Type.Boolean, false));
-                code.Put(context, $"push B false\n");
-            }
+                "int" => $"push I 0\n",
+                "float" => $"push F 0.0\n",
+                "string" => $"push S \"\"\n",
+                _ => $"push B false\n"
+            });
         }
         public override void ExitParens([NotNull] project_grammarParser.ParensContext context)
         {
             code.Put(context, code.Get(context.expr()));
-            values.Put(context, values.Get(context.expr()));
         }
         public override void ExitBlockOfStatements([NotNull] project_grammarParser.BlockOfStatementsContext context)
         {
@@ -107,13 +84,11 @@ namespace Project
         public override void ExitDeclaration([NotNull] project_grammarParser.DeclarationContext context)
         {
             var type = code.Get(context.primitiveType());
-            var typeValue = values.Get(context.primitiveType());
-            var s = "";
+            var s = string.Empty;
             foreach (var identifier in context.IDENTIFIER())
             {
                 s = s + type;
                 s = s + "save " + identifier.GetText() + "\n";
-                symbolTable.Add(identifier.Symbol, typeValue.type);
             }
             code.Put(context, s);
         }
@@ -124,22 +99,18 @@ namespace Project
         public override void ExitAssignment([NotNull] project_grammarParser.AssignmentContext context)
         {
             var right = code.Get(context.expr());
-            var rightValue = values.Get(context.expr());
-            var variableValue = symbolTable[context.IDENTIFIER().Symbol];
+            var leftType = symbolTable[context.IDENTIFIER().Symbol];
+            var rightType = types.Get(context.expr());
             string variable = context.IDENTIFIER().GetText();
 
-            if (variableValue == rightValue.type)
+            if (leftType == Type.Float && rightType == Type.Int)
             {
-                symbolTable[context.IDENTIFIER().Symbol] = rightValue.type;
-                values.Put(context, rightValue);
-                code.Put(context, right + "save " + variable + "\n" + "load " + variable + "\n");
+                code.Put(context, $"{right}itof\n" + $"save {variable}\n" + $"load {variable}\n");
+                
             }
             else
             {
-                var value = (Type.Float, ToFloat(rightValue.value));
-                symbolTable[context.IDENTIFIER().Symbol] = Type.Float;
-                values.Put(context, value);
-                code.Put(context, right + "itof\n" + "save " + variable + "\n" + "load " + variable + "\n");
+                code.Put(context, $"{right}save {variable} \n" + $"load {variable}\n");
             }
 
             if (context.expr().GetText() == firstText && !first)
@@ -148,24 +119,23 @@ namespace Project
                 right = code.Get(context);
                 code.Put(context, right + "pop\n");
             }
-
         }
 
         public override void ExitRelation([NotNull] project_grammarParser.RelationContext context)
         {
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
+
+            var leftType = types.Get(context.expr()[0]);
+            var rightType = types.Get(context.expr()[1]);
 
             switch (context.op.Type)
             {
                 case project_grammarParser.LES:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (leftType == Type.Float || rightType == Type.Float)
                         {
-                            values.Put(context, (Type.Boolean, ToFloat(leftValue.value) < ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "lt\n");
                             }
@@ -176,17 +146,15 @@ namespace Project
                         }
                         else
                         {
-                            values.Put(context, (Type.Boolean, (int)leftValue.value < (int)rightValue.value));
                             code.Put(context, left + right + "lt\n");
                         }
                     }
                     break;
                 case project_grammarParser.GRE:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (leftType == Type.Float || rightType == Type.Float)
                         {
-                            values.Put(context, (Type.Boolean, ToFloat(leftValue.value) > ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "gt\n");
                             }
@@ -197,7 +165,6 @@ namespace Project
                         }
                         else
                         {
-                            values.Put(context, (Type.Boolean, (int)leftValue.value > (int)rightValue.value));
                             code.Put(context, left + right + "gt\n");
                         }
                     }
@@ -208,17 +175,17 @@ namespace Project
         {
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
+
+            var leftType = types.Get(context.expr()[0]);
+            var rightType = types.Get(context.expr()[1]);
 
             switch (context.op.Type)
             {
                 case project_grammarParser.EQ:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (leftType == Type.Float || rightType == Type.Float)
                         {
-                            values.Put(context, (Type.Boolean, ToFloat(leftValue.value) == ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "eq F\n");
                             }
@@ -227,24 +194,21 @@ namespace Project
                                 code.Put(context, left + "itof\n" + right + "eq F\n");
                             }
                         }
-                        else if (leftValue.type == Type.String)
+                        else if (leftType == Type.String)
                         {
-                            values.Put(context, (Type.Boolean, (string)leftValue.value == (string)rightValue.value));
                             code.Put(context, left + right + "eq S\n");
                         }
                         else
                         {
-                            values.Put(context, (Type.Boolean, (int)leftValue.value == (int)rightValue.value));
                             code.Put(context, left + right + "eq I\n");
                         }
                     }
                     break;
                 case project_grammarParser.NEQ:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (leftType == Type.Float || rightType == Type.Float)
                         {
-                            values.Put(context, (Type.Boolean, ToFloat(leftValue.value) != ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "eq\n" + "not\n");
                             }
@@ -253,14 +217,12 @@ namespace Project
                                 code.Put(context, left + "itof\n" + right + "eq\n" + "not\n");
                             }
                         }
-                        else if (leftValue.type == Type.String)
+                        else if (leftType == Type.String)
                         {
-                            values.Put(context, (Type.Boolean, (string)leftValue.value != (string)rightValue.value));
                             code.Put(context, left + right + "eq\n" + "not\n");
                         }
                         else
                         {
-                            values.Put(context, (Type.Boolean, (int)leftValue.value != (int)rightValue.value));
                             code.Put(context, left + right + "eq\n" + "not\n");
                         }
                     }
@@ -269,41 +231,34 @@ namespace Project
         }
         public override void ExitLogicalAnd([NotNull] project_grammarParser.LogicalAndContext context)
         {
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
 
-            values.Put(context, (Type.Boolean, (bool)leftValue.value && (bool)rightValue.value));
             code.Put(context, left + right + "and\n");
-
         }
         public override void ExitLogicalOr([NotNull] project_grammarParser.LogicalOrContext context)
         {
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
 
-            values.Put(context, (Type.Boolean, (bool)leftValue.value || (bool)rightValue.value));
             code.Put(context, left + right + "or\n");
-
         }
         public override void ExitAddSubCon([NotNull] project_grammarParser.AddSubConContext context)
         {
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
+
+            var leftType = types.Get(context.expr()[0]);
+            var rightType = types.Get(context.expr()[1]);
 
             switch (context.op.Type)
             {
                 case project_grammarParser.ADD:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (types.Get(context) == Type.Float)
                         {
-                            values.Put(context, (Type.Float, ToFloat(leftValue.value) + ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "add\n");
                             }
@@ -314,17 +269,15 @@ namespace Project
                         }
                         else
                         {
-                            values.Put(context, (Type.Int, (int)leftValue.value + (int)rightValue.value));
                             code.Put(context, left + right + "add\n");
                         }
                     }
                     break;
                 case project_grammarParser.SUB:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if (leftType == Type.Float || rightType == Type.Float)
                         {
-                            values.Put(context, (Type.Float, ToFloat(leftValue.value) - ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "sub\n");
                             }
@@ -335,15 +288,12 @@ namespace Project
                         }
                         else
                         {
-                            values.Put(context, (Type.Int, (int)leftValue.value - (int)rightValue.value));
                             code.Put(context, left + right + "sub\n");
                         }
                     }
                     break;
                 case project_grammarParser.CON:
                     {
-
-                        values.Put(context, (Type.String, (string)leftValue.value + (string)rightValue.value));
                         code.Put(context, left + right + "concat\n");
 
                     }
@@ -354,17 +304,23 @@ namespace Project
         {
             var left = code.Get(context.expr()[0]);
             var right = code.Get(context.expr()[1]);
-            var leftValue = values.Get(context.expr()[0]);
-            var rightValue = values.Get(context.expr()[1]);
+
+            var leftType = types.Get(context.expr()[0]);
+            var rightType = types.Get(context.expr()[1]);
 
             switch (context.op.Type)
             {
                 case project_grammarParser.MUL:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if((leftType == Type.Int && rightType == Type.Int) || (leftType == Type.Float && rightType == Type.Float))
                         {
-                            values.Put(context, (Type.Float, ToFloat(leftValue.value) * ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            code.Put(context, left + right + "mul\n");
+                            break;
+                        }
+
+                        if (leftType != Type.Float || rightType != Type.Float)
+                        {
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "mul\n");
                             }
@@ -373,19 +329,19 @@ namespace Project
                                 code.Put(context, left + "itof\n" + right + "mul\n");
                             }
                         }
-                        else
-                        {
-                            values.Put(context, (Type.Int, (int)leftValue.value * (int)rightValue.value));
-                            code.Put(context, left + right + "mul\n");
-                        }
                     }
                     break;
                 case project_grammarParser.DIV:
                     {
-                        if (leftValue.type == Type.Float || rightValue.type == Type.Float)
+                        if ((leftType == Type.Int && rightType == Type.Int) || (leftType == Type.Float && rightType == Type.Float))
                         {
-                            values.Put(context, (Type.Float, ToFloat(leftValue.value) / ToFloat(rightValue.value)));
-                            if (leftValue.type == Type.Float)
+                            code.Put(context, left + right + "div\n");
+                            break;
+                        }
+
+                        if (leftType != Type.Float || rightType != Type.Float)
+                        {
+                            if (leftType == Type.Float)
                             {
                                 code.Put(context, left + right + "itof\n" + "div\n");
                             }
@@ -394,17 +350,11 @@ namespace Project
                                 code.Put(context, left + "itof\n" + right + "div\n");
                             }
                         }
-                        else
-                        {
-                            values.Put(context, (Type.Int, (int)leftValue.value / (int)rightValue.value));
-                            code.Put(context, left + right + "div\n");
-                        }
                     }
                     break;
                 case project_grammarParser.MOD:
                     {
 
-                        values.Put(context, (Type.Int, (int)leftValue.value % (int)rightValue.value));
                         code.Put(context, left + right + "mod\n");
 
                     }
@@ -413,20 +363,17 @@ namespace Project
         }
         public override void ExitUnaryMinus([NotNull] project_grammarParser.UnaryMinusContext context)
         {
-            var operandValue = values.Get(context.expr());
             var operand = code.Get(context.expr());
 
-            switch (operandValue.type)
+            switch (types.Get(context))
             {
                 case Type.Int:
                     {
-                        values.Put(context, (Type.Int, -(int)operandValue.value));
                         code.Put(context, operand + "uminus\n");
                     }
                     break;
                 case Type.Float:
                     {
-                        values.Put(context, (Type.Float, -ToFloat(operandValue.value)));
                         code.Put(context, operand + "uminus\n");
                     }
                     break;
@@ -434,27 +381,20 @@ namespace Project
         }
         public override void ExitNegation([NotNull] project_grammarParser.NegationContext context)
         {
-            var operandValue = values.Get(context.expr());
             var operand = code.Get(context.expr());
 
-
-            values.Put(context, (Type.Boolean, !(bool)operandValue.value));
             code.Put(context, operand + "not\n");
-
         }
         public override void ExitWriteStatement([NotNull] project_grammarParser.WriteStatementContext context)
         {
-            string s = "";
+            var s = string.Empty;
             int count = 0;
             foreach (var expr in context.expr())
             {
-                var valueOfExpr = values.Get(expr);
                 var exprCode = code.Get(expr);
                 s = s + exprCode;
                 count++;
-                //Console.Write(" ");
             }
-            //Console.Write("\n");
             code.Put(context, s + "print " + count.ToString() + "\n");
         }
         public override void ExitReadStatement([NotNull] project_grammarParser.ReadStatementContext context)
@@ -523,7 +463,7 @@ namespace Project
             {
                 var s = code.Get(statement);
                 allText += s;
-                Console.Write(s);
+                //Console.Write(s);
             }
             File.WriteAllText("output.txt", allText);
         }

@@ -1,27 +1,5 @@
-﻿int a, b;
-float c;
-a = 5;
-b = 10;
-c = 15.5;
-c = a + c;
+﻿float a;
+float b;
+b = 7.355;
+a = 87;
 
-write a, b, c, " ";
-while (a < b) {
-	a = a + 1;
-	c = c + 1;
-	write a, b, c, " ";
-}
-
-bool x;
-x = true;
-if (x) {
-	write "x is true";
-} else {
-	write "x is false";
-}
-
-string s, t;
-read s, t;
-
-float d;
-d = c / b;

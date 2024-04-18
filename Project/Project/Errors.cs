@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Project
+namespace PJP_Project
 {
     public class Errors
     {

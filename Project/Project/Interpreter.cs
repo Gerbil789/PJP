@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace Project
+namespace PJP_Project
 {
     public class Interpreter
     {
@@ -167,7 +167,7 @@ namespace Project
                         if (int.TryParse(value, out output))
                            stack.Push((Type.Int, output));
                         else
-                            throw new Exception($"Read value isnt of expected type");
+                            throw new Exception($"Read value isnt of expected type. {value} is not int");
                     }
                     break;
                 case "F":
@@ -176,7 +176,7 @@ namespace Project
                         if (float.TryParse(value, out output))
                             stack.Push((Type.Float, output));
                         else
-                            throw new Exception($"Read value isnt of expected type");
+                            throw new Exception($"Read value isnt of expected type. {value} is not float");
                     }
                     break;
                 case "B":
@@ -186,7 +186,7 @@ namespace Project
                         else if (value.Equals("false"))
                             stack.Push((Type.Boolean, false));
                         else
-                            throw new Exception($"Read value isnt of expected type");
+                            throw new Exception($"Read value isnt of expected type.  {value} is not bool");
 
                     }
                     break;

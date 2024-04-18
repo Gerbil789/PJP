@@ -4,15 +4,15 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Threading;
-using PJP_Project;
 
-namespace Project
+namespace PJP_Project
 {
     public class Program
     {
-        static string fileName = "input4.txt";
+        static string fileName = "input1.txt";
         public static void Main(string[] args)
         {
+
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             var inputFile = new StreamReader(fileName);
             AntlrInputStream input = new AntlrInputStream(inputFile);
@@ -22,25 +22,55 @@ namespace Project
             parser.AddErrorListener(new VerboseListener());
 
 
-            Console.WriteLine("----------------SYNTAX ERRORS--------------");
+            Console.WriteLine("----------------SYNTAX ERRORS------------");
             IParseTree tree = parser.program();
-           
+
             if (parser.NumberOfSyntaxErrors != 0)
                 return;
             else
-                Console.WriteLine("No syntax errors");
+                Console.WriteLine("Ok!");
 
 
             Console.WriteLine("\n----------------TYPE ERRORS--------------");
-            if (new EvalVisitor().Visit(tree) == Type.Error) 
+            var typeCheck = new TypeCheckListener();
+            var walker = new ParseTreeWalker();
+            walker.Walk(typeCheck, tree);
+
+            if (Errors.NumberOfErrors != 0)
+            {
+                Errors.PrintAndClearErrors();
                 return;
+            }
             else
-                Console.WriteLine("No type errors");
+                Console.WriteLine("Ok!");
 
 
-            Console.WriteLine("\n----------------MACHINE CODE--------------");
-            ParseTreeWalker walker = new ParseTreeWalker();
-            walker.Walk(new CodeGeneratorListener(), tree);
+            Console.WriteLine("\n----------------MACHINE CODE-------------");
+
+            var generator = new CodeGeneratorListener(typeCheck.types, typeCheck.symbolTable);
+            walker.Walk(generator, tree);
+
+            if (Errors.NumberOfErrors != 0)
+            {
+                Errors.PrintAndClearErrors();
+                return;
+            }
+            else
+                Console.WriteLine("Ok!");
+
+
+            Console.WriteLine("\n----------------INTERPRETER--------------");
+            try
+            {
+                var intertpreter = new Interpreter("output.txt");
+                intertpreter.Run();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("\n----------------RUNTIME ERROR------------\n");
+                Console.WriteLine(e.Message);
+                Console.WriteLine("\n-----------------------------------------");
+            }
 
         }
     }

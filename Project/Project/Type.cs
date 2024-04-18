@@ -1,5 +1,5 @@
 ﻿
-namespace Project
+namespace PJP_Project
 {
     public enum Type
     {

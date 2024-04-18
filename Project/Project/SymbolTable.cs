@@ -1,7 +1,7 @@
 ﻿using Antlr4.Runtime;
 using System.Collections.Generic;
 
-namespace Project
+namespace PJP_Project
 {
     public class SymbolTable
     {
@@ -16,15 +16,6 @@ namespace Project
             }
             else
             {
-                //object value = type switch
-                //{
-                //    Type.Int => 0,
-                //    Type.Float => (float)0,
-                //    Type.String => "",
-                //    Type.Boolean => false,
-                //    _ => throw new System.Exception("Invalid type"),
-                //};
-
                 memory.Add(name, type);
             }
         }
