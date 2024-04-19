@@ -1,5 +1,10 @@
-﻿float a;
-float b;
-b = 7.355;
-a = 87;
+﻿int a, b;
+float c, d;
+write (a == b);
+write (a != b);
 
+write (c == d);
+write (c != d);
+
+write (a == c);
+write (a != c);

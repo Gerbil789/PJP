@@ -23,6 +23,7 @@ READ : 'read' ;
 WRITE : 'write' ;
 IF : 'if' ;
 ELSE : 'else' ;
+DO : 'do' ;
 WHILE : 'while' ;
 IDENTIFIER : [a-zA-Z] ([a-zA-Z0-9]*)? ; 
 
@@ -48,6 +49,7 @@ statement
     | primitiveType IDENTIFIER ( COMMA IDENTIFIER)* SEMI    # declaration
     | IF '(' expr ')' pos=statement (ELSE neg=statement)?   # ifElse
     | WHILE '(' expr ')' statement                          # while
+    | DO statement WHILE '(' expr ')' SEMI                  # doWhile
     | READ IDENTIFIER ( COMMA IDENTIFIER)* SEMI             # readStatement
     | WRITE expr ( COMMA expr)* SEMI                        # writeStatement
     | expr SEMI                                             # printExpr

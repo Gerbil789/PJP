@@ -473,6 +473,7 @@ namespace PJP_Project
         }
         public override void ExitWriteStatement([NotNull] project_grammarParser.WriteStatementContext context)
         {
+
             foreach (var expr in context.expr())
             {
                 var type = types.Get(expr);
@@ -482,6 +483,27 @@ namespace PJP_Project
                     return;
                 }
             }
+            types.Put(context, Type.Empty);
+        }
+
+        public override void ExitDoWhile([NotNull] project_grammarParser.DoWhileContext context)
+        {
+            var type = types.Get(context.expr());
+            if (type != Type.Boolean)
+            {
+                Errors.ReportError(context.DO().Symbol, $"In expression '{context.DO().GetText()}({type})' you are using wrong operands.");
+                Errors.PrintAndClearErrors();
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            var doWhileType = types.Get(context.statement());
+            if (doWhileType == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
             types.Put(context, Type.Empty);
         }
     }

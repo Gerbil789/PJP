@@ -123,7 +123,6 @@ namespace PJP_Project
                 {
                     var split = line.Split(' ');
                     var index = int.Parse(split[1]);
-
                     labels.Add(index, i);
                 }
                 i++;
@@ -134,8 +133,8 @@ namespace PJP_Project
             if(memory.ContainsKey(name))
             {
                 stack.Push(memory[name]);
-            }else
-                throw new Exception($"Variable {name} was not initialized");
+            }
+            else throw new Exception($"Variable {name} was not initialized");
         }
         private void Save(string name)
         {
@@ -144,17 +143,12 @@ namespace PJP_Project
         }
         private void Print(int n)
         {
-            List<object> items = new List<object>();
-            for (int i = 0; i < n; i++)
+            var items = new object[n];
+            for (int i = n - 1; i >= 0; i--)
             {
-                items.Add(stack.Pop().value);
+                items[i] = stack.Pop().value;
             }
-            items.Reverse();
-            foreach(var item in items)
-            {
-                Console.Write(item);
-            }
-            Console.WriteLine();
+            Console.WriteLine(string.Join("", items));
         }
         private void Read(string type)
         {
