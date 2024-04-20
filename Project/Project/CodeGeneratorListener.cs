@@ -313,14 +313,40 @@ namespace PJP_Project
         public override void ExitWhile([NotNull] project_grammarParser.WhileContext context)
         {
             var condition = code.Get(context.expr());
-
-            var body = string.Empty;
             var startLabel = GenerateUniqueLabel();
             var endLabel = GenerateUniqueLabel();
 
-            body += code.Get(context.statement());
-            body += $"jmp {startLabel}\n";
-            code.Put(context, $"label {startLabel}\n{condition}fjmp {endLabel}\n{body}label {endLabel}\n");
+            code.Put(context, $"label {startLabel}\n" +                     // set start label
+                $"{condition}fjmp {endLabel}\n" +                           // if condition is false jump to end label
+                $"{code.Get(context.statement())}jmp {startLabel}\n" +      // execute statement and jump to start label
+                $"label {endLabel}\n");                                     // set end label
+        }
+        public override void ExitDoWhile([NotNull] project_grammarParser.DoWhileContext context)
+        {
+            var condition = code.Get(context.expr());
+            var startLabel = GenerateUniqueLabel();
+            var endLabel = GenerateUniqueLabel();
+
+            code.Put(context, $"label {startLabel}\n" +     // set start label
+                $"{code.Get(context.statement())}" +        // execute statement
+                $"{condition}fjmp {endLabel}\n" +           // if condition is false jump to end label
+                $"jmp {startLabel}\n" +                     // jump back to start label
+                $"label {endLabel}\n");                     // set end label
+        }
+        public override void ExitFor([NotNull] project_grammarParser.ForContext context)
+        {
+            var initialization = code.Get(context.expr()[0]);
+            var condition = code.Get(context.expr()[1]);
+            var update = code.Get(context.expr()[2]);
+            var startLabel = GenerateUniqueLabel();
+            var endLabel = GenerateUniqueLabel();
+
+            code.Put(context, $"{initialization}" +                     // execute initialization
+                $"label {startLabel}\n" +                               // set start label
+                $"{condition}fjmp {endLabel}\n" +                       // if condition is false jump to end label
+                $"{code.Get(context.statement())}" +                    // execute loop body
+                $"{update}jmp {startLabel}\n" +                         // jump back to start label for update
+                $"label {endLabel}\n");                                 // end label
         }
         public override void ExitProgram([NotNull] project_grammarParser.ProgramContext context)
         {
@@ -332,18 +358,6 @@ namespace PJP_Project
                 //Console.Write(s);
             }
             File.WriteAllText("output.txt", text);
-        }
-        public override void ExitDoWhile([NotNull] project_grammarParser.DoWhileContext context)
-        {
-            var condition = code.Get(context.expr());
-
-            var body = string.Empty;
-            var startLabel = GenerateUniqueLabel();
-            var endLabel = GenerateUniqueLabel();
-
-            body += code.Get(context.statement());
-            body += $"label {startLabel}\n";
-            code.Put(context, body + condition + "tjmp " + startLabel.ToString() + "\n" + "label " + endLabel.ToString() + "\n");
         }
     }
 }

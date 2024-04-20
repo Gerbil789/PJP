@@ -9,7 +9,7 @@ namespace PJP_Project
 {
     public class Program
     {
-        static string fileName = "input1.txt";
+        static string fileName = "input4.txt";
         public static void Main(string[] args)
         {
 

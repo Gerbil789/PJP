@@ -431,27 +431,6 @@ namespace PJP_Project
 
             types.Put(context, Type.Empty);
         }
-        public override void ExitWhile([NotNull] project_grammarParser.WhileContext context)
-        {
-            var type = types.Get(context.expr());
-            if (type != Type.Boolean)
-            {
-                Errors.ReportError(context.WHILE().Symbol, $"In expression '{context.WHILE().GetText()}({type})' you are using wrong operands.");
-                Errors.PrintAndClearErrors();
-                types.Put(context, Type.Error);
-                return;
-            }
-
-            var whileType = types.Get(context.statement());
-            if (whileType == Type.Error)
-            {
-                types.Put(context, Type.Error);
-                return;
-            }
-
-            types.Put(context, Type.Empty);
-           
-        }
         public override void ExitReadStatement([NotNull] project_grammarParser.ReadStatementContext context)
         {
             foreach (var identifier in context.IDENTIFIER())
@@ -485,7 +464,27 @@ namespace PJP_Project
             }
             types.Put(context, Type.Empty);
         }
+        public override void ExitWhile([NotNull] project_grammarParser.WhileContext context)
+        {
+            var type = types.Get(context.expr());
+            if (type != Type.Boolean)
+            {
+                Errors.ReportError(context.WHILE().Symbol, $"In expression '{context.WHILE().GetText()}({type})' you are using wrong operands.");
+                Errors.PrintAndClearErrors();
+                types.Put(context, Type.Error);
+                return;
+            }
 
+            var whileType = types.Get(context.statement());
+            if (whileType == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            types.Put(context, Type.Empty);
+
+        }
         public override void ExitDoWhile([NotNull] project_grammarParser.DoWhileContext context)
         {
             var type = types.Get(context.expr());
@@ -499,6 +498,39 @@ namespace PJP_Project
 
             var doWhileType = types.Get(context.statement());
             if (doWhileType == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            types.Put(context, Type.Empty);
+        }
+
+        public override void ExitFor([NotNull] project_grammarParser.ForContext context)
+        {
+            var type = types.Get(context.expr()[0]);
+            if (type == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            type = types.Get(context.expr()[1]);
+            if (type == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            type = types.Get(context.expr()[2]);
+            if (type == Type.Error)
+            {
+                types.Put(context, Type.Error);
+                return;
+            }
+
+            var forType = types.Get(context.statement());
+            if (forType == Type.Error)
             {
                 types.Put(context, Type.Error);
                 return;

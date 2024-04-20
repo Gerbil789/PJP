@@ -6,10 +6,25 @@ namespace PJP_Project
 {
     public class Interpreter
     {
-        private Dictionary<int, int> labels = new Dictionary<int, int>();
-        private List<string> code = new List<string>();
-        Dictionary<string, (Type type, object value)> memory = new Dictionary<string, (Type type, object value)>();
-        Stack<(Type type, object value)> stack = new Stack<(Type type, object value)>();
+        private Dictionary<int, int> labels = new();
+        private List<string> code = new();
+        Dictionary<string, (Type type, object value)> memory = new();
+        Stack<(Type type, object value)> stack = new();
+        public Interpreter(string filename)
+        {
+            var lines = File.ReadAllLines(filename);
+            int i = 0;
+            foreach (var line in lines)
+            {
+                code.Add(line);
+                if (line.StartsWith("label"))
+                {
+                    var index = int.Parse(line.Split(' ')[1]);
+                    labels.Add(index, i);
+                }
+                i++;
+            }
+        }
         public void Run()
         {
             int current = 0;
@@ -32,6 +47,18 @@ namespace PJP_Project
                     else
                     {
                         current = labels[int.Parse(command[1])];
+                    }
+                }
+                else if (command[0] == "tjmp")
+                {
+                    var value = stack.Pop();
+                    if ((bool)value.value)
+                    {
+                        current = labels[int.Parse(command[1])];
+                    }
+                    else
+                    {
+                        current++;
                     }
                 }
                 else
@@ -112,22 +139,7 @@ namespace PJP_Project
                 } 
             }
         }
-        public Interpreter(string filename)
-        {
-            var input = File.ReadAllLines(filename);
-            int i = 0;
-            foreach (var line in input)
-            {
-                code.Add(line);
-                if(line.StartsWith("label"))
-                {
-                    var split = line.Split(' ');
-                    var index = int.Parse(split[1]);
-                    labels.Add(index, i);
-                }
-                i++;
-            }
-        }
+
         private void Load(string name)
         {
             if(memory.ContainsKey(name))

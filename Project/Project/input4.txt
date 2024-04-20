@@ -1,10 +1,7 @@
-﻿int a, b;
-float c, d;
-write (a == b);
-write (a != b);
-
-write (c == d);
-write (c != d);
-
-write (a == c);
-write (a != c);
+﻿int i;
+string s;
+s = "A";
+for(i = 0; i < 10; i = i + 1){
+	write s;
+	s = s."A";
+}
