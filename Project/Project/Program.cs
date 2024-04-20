@@ -12,7 +12,6 @@ namespace PJP_Project
         static string fileName = "input4.txt";
         public static void Main(string[] args)
         {
-
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             var inputFile = new StreamReader(fileName);
             AntlrInputStream input = new AntlrInputStream(inputFile);

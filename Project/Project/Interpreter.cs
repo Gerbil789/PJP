@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace PJP_Project
 {
@@ -28,118 +29,60 @@ namespace PJP_Project
         public void Run()
         {
             int current = 0;
+            Dictionary<string, Action<string[]>> commands = new Dictionary<string, Action<string[]>>
+            {
+                { "jmp", args => current = labels[int.Parse(args[0])] },
+                { "fjmp", args => current = (bool)stack.Pop().value ? current : labels[int.Parse(args[0])] },
+                { "tjmp", args => current = (bool)stack.Pop().value ? labels[int.Parse(args[0])] : current },
+                { "label", args => { /* Do nothing for label */ } },
+                { "load", args => Load(args[0]) },
+                { "save", args => Save(args[0]) },
+                { "print", args => Print(int.Parse(args[0])) },
+                { "read", args => Read(args[0]) },
+                { "pop", args => stack.Pop() },
+                { "push", args => { 
+                        var type = args[0];
+                        var obj = args[1];
+                        if (type == "S")
+                            for (int i = 3; i < args.Length; i++)
+                                obj += " " + args[i];
+                        Push(type, obj);
+                    } },
+                { "itof", args => Itof() },
+                { "not", args => Not() },
+                { "eq", args => Eq() },
+                { "lt", args => Lt() },
+                { "gt", args => Gt() },
+                { "or", args => Or() },
+                { "and", args => And() },
+                { "concat", args => Concat() },
+                { "uminus", args => Uminus() },
+                { "mod", args => Mod() },
+                { "div", args => Div() },
+                { "mul", args => Mul() },
+                { "sub", args => Sub() },
+                { "add", args => Add() }
+            };
+
+
             while (current < code.Count)
             {
                 var command = code[current].Split(" ");
+                var commandName = command[0];
+                var commandArgs = command.Skip(1).ToArray();
 
-                if (command[0] == "jmp")
+                if (commands.ContainsKey(commandName))
                 {
-                    var to = int.Parse(command[1]);
-                    current = labels[to];
-                }
-                else if (command[0] == "fjmp")
-                {
-                    var value = stack.Pop();
-                    if ((bool)value.value)
-                    {
-                        current++;
-                    }
-                    else
-                    {
-                        current = labels[int.Parse(command[1])];
-                    }
-                }
-                else if (command[0] == "tjmp")
-                {
-                    var value = stack.Pop();
-                    if ((bool)value.value)
-                    {
-                        current = labels[int.Parse(command[1])];
-                    }
-                    else
-                    {
-                        current++;
-                    }
+                    commands[commandName](commandArgs);
                 }
                 else
                 {
-                    switch (command[0])
-                    {
-                        case "label":
-                            break;
-                        case "load":
-                            Load(command[1]);
-                            break;
-                        case "save":
-                            Save(command[1]);
-                            break;
-                        case "print":
-                            var n = int.Parse(command[1]);
-                            Print(n);
-                            break;
-                        case "read":
-                            var type = command[1];
-                            Read(type);
-                            break;
-                        case "pop":
-                            stack.Pop();
-                            break;
-                        case "push":
-                            type = command[1];
-                            var obj = command[2];
-                            if (type == "S")
-                                for (int i = 3; i < command.Length; i++)
-                                    obj += " " + command[i];
-                            Push(type, obj);
-                            break;
-                        case "itof":
-                            Itof();
-                            break;
-                        case "not":
-                            Not();
-                            break;
-                        case "eq":
-                            Eq();
-                            break;
-                        case "lt":
-                            Lt();
-                            break;
-                        case "gt":
-                            Gt();
-                            break;
-                        case "or":
-                            Or();
-                            break;
-                        case "and":
-                            And();
-                            break;
-                        case "concat":
-                            Concat();
-                            break;
-                        case "uminus":
-                            Uminus();
-                            break;
-                        case "mod":
-                            Mod();
-                            break;
-                        case "div":
-                            Div();
-                            break;
-                        case "mul":
-                            Mul();
-                            break;
-                        case "sub":
-                            Sub();
-                            break;
-                        case "add":
-                            Add();
-                            break;
-                    }
-                    current++;
-                } 
+                    throw new InvalidOperationException($"Unknown command: {commandName}");
+                }
+
+                current++;
             }
         }
-
         private void Load(string name)
         {
             if(memory.ContainsKey(name))
@@ -162,86 +105,50 @@ namespace PJP_Project
             }
             Console.WriteLine(string.Join("", items));
         }
-        private void Read(string type)
+        private void Read(string typeId)
         {
-            string value = Console.ReadLine();
-            switch (type)
+            var value = Console.ReadLine();
+            object parsedValue = typeId switch
             {
-                case "I":
-                    {
-                        int output;
-                        if (int.TryParse(value, out output))
-                           stack.Push((Type.Int, output));
-                        else
-                            throw new Exception($"Read value isnt of expected type. {value} is not int");
-                    }
-                    break;
-                case "F":
-                    {
-                        float output;
-                        if (float.TryParse(value, out output))
-                            stack.Push((Type.Float, output));
-                        else
-                            throw new Exception($"Read value isnt of expected type. {value} is not float");
-                    }
-                    break;
-                case "B":
-                    {
-                        if (value.Equals("true"))
-                            stack.Push((Type.Boolean, true));
-                        else if (value.Equals("false"))
-                            stack.Push((Type.Boolean, false));
-                        else
-                            throw new Exception($"Read value isnt of expected type.  {value} is not bool");
+                "I" when int.TryParse(value, out int intValue) => intValue,
+                "F" when float.TryParse(value, out float floatValue) => floatValue,
+                "B" when bool.TryParse(value, out bool boolValue) => boolValue,
+                "S" => value.Replace("\"", String.Empty),
+                _ => throw new Exception($"Expected '{typeId}' for Read operation.")
+            };
 
-                    }
-                    break;
-                case "S":
-                    {
-                        stack.Push((Type.String, value.Replace("\"", String.Empty)));
-                    }
-                    break;
-            }
+            var type = typeId switch
+            {
+                "I" => Type.Int,
+                "F" => Type.Float,
+                "B" => Type.Boolean,
+                "S" => Type.String,
+                _ => throw new ArgumentException($"Unsupported type '{typeId}' specified.")
+            };
+
+            stack.Push((type, parsedValue));
         }
-        private void Push(string type, string value)
+        private void Push(string typeId, string value)
         {
-            switch (type)
+            object parsedValue = typeId switch
             {
-                case "I":
-                    {
-                        int output;
-                        if (int.TryParse(value, out output))
-                            stack.Push((Type.Int, output));
-                        else
-                            throw new Exception($"Pushed value isnt of expected type");
-                    }
-                    break;
-                case "F":
-                    {
-                        float output;
-                        if (float.TryParse(value, out output))
-                            stack.Push((Type.Float, output));
-                        else
-                            throw new Exception($"Pushed value isnt of expected type");
-                    }
-                    break;
-                case "B":
-                    {
-                        if (value.Equals("true"))
-                            stack.Push((Type.Boolean, true));
-                        else if (value.Equals("false"))
-                            stack.Push((Type.Boolean, false));
-                        else
-                            throw new Exception($"Pushed value isnt of expected type");
+                "I" when int.TryParse(value, out int intValue) => intValue,
+                "F" when float.TryParse(value, out float floatValue) => floatValue,
+                "B" when bool.TryParse(value, out bool boolValue) => boolValue,
+                "S" => value.Replace("\"", string.Empty),
+                _ => throw new Exception($"Unsupported type '{typeId}' specified for Push operation.")
+            };
 
-                    }
-                    break;
-                case "S":
-                    {
-                        stack.Push((Type.String, value.Replace("\"", String.Empty)));
-                    }
-                    break;
-            }
+            var type = typeId switch
+            {
+                "I" => Type.Int,
+                "F" => Type.Float,
+                "B" => Type.Boolean,
+                "S" => Type.String,
+                _ => throw new ArgumentException($"Unknown type '{typeId}' specified.")
+            };
+
+            stack.Push((type, parsedValue));
         }
         private void Itof()
         {
@@ -253,203 +160,156 @@ namespace PJP_Project
         }
         private void Not()
         {
-            (Type type, object value) value = stack.Pop();
+            var value = stack.Pop();
             stack.Push((Type.Boolean, !(bool)value.value));
         }
         private void Eq()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            bool result = leftValue.type switch
             {
-                case Type.Int:
-                    {
-                        stack.Push((Type.Boolean, (int)leftValue.value == (int)rightValue.value));
-                    }
-                    break;
-                case Type.String:
-                    {
-                        stack.Push((Type.Boolean, (string)leftValue.value == (string)rightValue.value));
-                    }
-                    break;
-                case Type.Float:
-                    {
-                        stack.Push((Type.Boolean, (float)leftValue.value == (float)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Int => (int)Convert.ToInt32(leftValue.value) == (int)Convert.ToInt32(rightValue.value),
+                Type.String => (string)leftValue.value == (string)rightValue.value,
+                Type.Float => (float)leftValue.value == (float)rightValue.value,
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for equality comparison.")
+            };
+
+            stack.Push((Type.Boolean, result));
         }
         private void Lt()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            bool result = leftValue.type switch
             {
-                case Type.Int:
-                    {
-                        stack.Push((Type.Boolean, (int)leftValue.value < (int)rightValue.value));
-                    }
-                    break;
-                case Type.Float:
-                    {
-                        stack.Push((Type.Boolean, (float)leftValue.value > (float)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Int => (int)Convert.ToInt32(leftValue.value) < (int)Convert.ToInt32(rightValue.value),
+                Type.Float => (float)leftValue.value < (float)rightValue.value,
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for less than comparison.")
+            };
+
+            stack.Push((Type.Boolean, result));
         }
         private void Gt()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            bool result = leftValue.type switch
             {
-                case Type.Int:
-                    {
-                        stack.Push((Type.Boolean, (int)leftValue.value > (int)rightValue.value));
-                    }
-                    break;
-                case Type.Float:
-                    {
-                        stack.Push((Type.Boolean, (float)leftValue.value > (float)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Int => (int)Convert.ToInt32(leftValue.value) > (int)Convert.ToInt32(rightValue.value),
+                Type.Float => (float)leftValue.value > (float)rightValue.value,
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for greater than comparison.")
+            };
+
+            stack.Push((Type.Boolean, result));
         }
         private void Or()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
-            {
-                case Type.Boolean:
-                    {
-                        stack.Push((Type.Boolean, (bool)leftValue.value || (bool)rightValue.value));
-                    }
-                    break;
-            }
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            if (leftValue.type != Type.Boolean)
+                throw new ArgumentException($"Unsupported type '{leftValue.type}' or '{rightValue.type}' for logical OR operation.");
+
+            stack.Push((Type.Boolean, (bool)leftValue.value || (bool)rightValue.value));
         }
         private void And()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
-            {
-                case Type.Boolean:
-                    {
-                        stack.Push((Type.Boolean, (bool)leftValue.value && (bool)rightValue.value));
-                    }
-                    break;
-            }
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            if (leftValue.type != Type.Boolean)
+                throw new ArgumentException($"Unsupported type '{leftValue.type}' or '{rightValue.type}' for logical AND operation.");
+
+            stack.Push((Type.Boolean, (bool)leftValue.value && (bool)rightValue.value));
         }
         private void Concat()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
-            {
-                case Type.String:
-                    {
-                        stack.Push((Type.String, $"{(string)leftValue.value}{(string)rightValue.value}"));
-                    }
-                    break;
-            }
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            if (leftValue.type != Type.String)
+                throw new ArgumentException($"Unsupported type '{leftValue.type}' or '{rightValue.type}' for string concatenation.");
+
+            stack.Push((Type.String, $"{(string)leftValue.value}{(string)rightValue.value}"));
         }
         private void Uminus()
         {
-            (Type type, object value) value = stack.Pop();
-            switch (value.type)
+            var value = stack.Pop();
+
+            object negatedValue = value.type switch
             {
-                case Type.Int:
-                    {
-                        stack.Push((Type.Int, -(int)value.value));
-                    }
-                    break;
-                case Type.Float:
-                    {
-                        stack.Push((Type.Float, -(float)value.value));
-                    }
-                    break;
-            }
+                Type.Int => -(int)value.value,
+                Type.Float => -(float)value.value,
+                _ => throw new ArgumentException($"Unsupported type '{value.type}' for unary minus operation.")
+            };
+            stack.Push((value.type, negatedValue));
         }
         private void Mod()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
 
             stack.Push((Type.Int, (int)leftValue.value % (int)rightValue.value));
-
         }
         private void Div()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            object result = leftValue.type switch
             {
-                case Type.Float:
-                    {
-                        stack.Push((Type.Float, (float)leftValue.value / (float)rightValue.value));
-                    }
-                    break;
-                case Type.Int:
-                    {
-                        stack.Push((Type.Int, (int)leftValue.value / (int)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Float => (float)leftValue.value / (float)rightValue.value,
+                Type.Int => (int)leftValue.value / (int)rightValue.value,
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for division operation.")
+            };
+
+            stack.Push((leftValue.type, result));
         }
         private void Mul()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+
+            object result = leftValue.type switch
             {
-                case Type.Float:
-                    {
-                        stack.Push((Type.Float, (float)leftValue.value * (float)rightValue.value));
-                    }
-                    break;
-                case Type.Int:
-                    {
-                        stack.Push((Type.Int, (int)leftValue.value * (int)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Float => (float)leftValue.value * (float)rightValue.value,
+                Type.Int => (int)leftValue.value * (int)rightValue.value,
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for multiplication operation.")
+            };
+
+            stack.Push((leftValue.type, result));
         }
         private void Add()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+           
+            var result = leftValue.type switch
             {
-                case Type.Float:
-                    {
-                        stack.Push((Type.Float, (float)leftValue.value + (float)rightValue.value));
-                    }
-                    break;
-                case Type.Int:
-                    {
-                        stack.Push((Type.Int, (int)leftValue.value + (int)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Float => (float)leftValue.value + (float)rightValue.value,
+                Type.Int => (int)Convert.ToInt32(leftValue.value) + (int)Convert.ToInt32(rightValue.value),
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for addition operation.")
+            };
+
+            stack.Push((leftValue.type, result));
         }
         private void Sub()
         {
-            (Type type, object value) rightValue = stack.Pop();
-            (Type type, object value) leftValue = stack.Pop();
-            switch (leftValue.type)
+            var rightValue = stack.Pop();
+            var leftValue = stack.Pop();
+            
+            object result = leftValue.type switch
             {
-                case Type.Float:
-                    {
-                        stack.Push((Type.Float, (float)leftValue.value - (float)rightValue.value));
-                    }
-                    break;
-                case Type.Int:
-                    {
-                        stack.Push((Type.Int, (int)leftValue.value - (int)rightValue.value));
-                    }
-                    break;
-            }
+                Type.Float => (float)leftValue.value - (float)rightValue.value,
+                Type.Int => (int)Convert.ToInt32(leftValue.value) - (int)Convert.ToInt32(rightValue.value),
+                _ => throw new ArgumentException($"Unsupported type '{leftValue.type}' for subtraction operation.")
+            };
+
+            stack.Push((leftValue.type, result));
         }
     }
 }

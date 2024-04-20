@@ -60,7 +60,6 @@ namespace PJP_Project
         public override void ExitEmptyStatement([NotNull] project_grammarParser.EmptyStatementContext context)
         {
             types.Put(context, Type.Empty);
-            //base.ExitEmptyStatement(context);
         }
         public override void ExitId([NotNull] project_grammarParser.IdContext context)
         {
@@ -483,7 +482,6 @@ namespace PJP_Project
             }
 
             types.Put(context, Type.Empty);
-
         }
         public override void ExitDoWhile([NotNull] project_grammarParser.DoWhileContext context)
         {
@@ -505,32 +503,31 @@ namespace PJP_Project
 
             types.Put(context, Type.Empty);
         }
-
         public override void ExitFor([NotNull] project_grammarParser.ForContext context)
         {
-            var type = types.Get(context.expr()[0]);
-            if (type == Type.Error)
+            //inizialization
+            if (types.Get(context.expr()[0]) == Type.Error)
             {
                 types.Put(context, Type.Error);
                 return;
             }
 
-            type = types.Get(context.expr()[1]);
-            if (type == Type.Error)
+            //condition
+            if (types.Get(context.expr()[1]) == Type.Error)
             {
                 types.Put(context, Type.Error);
                 return;
             }
 
-            type = types.Get(context.expr()[2]);
-            if (type == Type.Error)
+            //update
+            if (types.Get(context.expr()[2]) == Type.Error)
             {
                 types.Put(context, Type.Error);
                 return;
             }
 
-            var forType = types.Get(context.statement());
-            if (forType == Type.Error)
+            //body
+            if (types.Get(context.statement()) == Type.Error)
             {
                 types.Put(context, Type.Error);
                 return;

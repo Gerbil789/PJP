@@ -46,16 +46,16 @@ LINE_COMMENT: '//' ~[\r\n]* -> skip ;
 program: statement+ EOF ;
 
 statement
-    : '{' statement* '}'                                        # blockOfStatements
-    | primitiveType IDENTIFIER ( COMMA IDENTIFIER)* SEMI        # declaration
-    | IF '(' expr ')' pos=statement (ELSE neg=statement)?       # ifElse
-    | WHILE '(' expr ')' statement                              # while
-    | DO statement WHILE '(' expr ')' SEMI                      # doWhile
-    | FOR '(' (expr)? SEMI (expr)? SEMI (expr)? ')' statement   # for
-    | READ IDENTIFIER ( COMMA IDENTIFIER)* SEMI                 # readStatement
-    | WRITE expr ( COMMA expr)* SEMI                            # writeStatement
-    | expr SEMI                                                 # printExpr
-    | SEMI                                                      # emptyStatement
+    : '{' statement* '}'                                    # blockOfStatements
+    | primitiveType IDENTIFIER ( COMMA IDENTIFIER)* SEMI    # declaration
+    | IF '(' expr ')' pos=statement (ELSE neg=statement)?   # ifElse
+    | WHILE '(' expr ')' statement                          # while
+    | DO statement WHILE '(' expr ')' SEMI                  # doWhile
+    | FOR '(' expr SEMI expr SEMI expr ')' statement        # for
+    | READ IDENTIFIER ( COMMA IDENTIFIER)* SEMI             # readStatement
+    | WRITE expr ( COMMA expr)* SEMI                        # writeStatement
+    | expr SEMI                                             # printExpr
+    | SEMI                                                  # emptyStatement
     ;
 
     

@@ -11,9 +11,9 @@ namespace PJP_Project
         private SymbolTable symbolTable;
         private ParseTreeProperty<Type> types;
 
-        private bool first = true; //check if it is the first assignment
-        private string firstText = string.Empty; //store the first assignment
-        private int label = 0; //unique label generator
+        private bool first = true;                  //check if it is the first assignment
+        private string firstText = string.Empty;    //store the first assignment
+        private int label = 0;                      //unique label generator
 
         public CodeGeneratorListener(ParseTreeProperty<Type> types, SymbolTable symbolTable)
         {
@@ -301,14 +301,15 @@ namespace PJP_Project
         public override void ExitIfElse([NotNull] project_grammarParser.IfElseContext context)
         {
             var condition = code.Get(context.expr());
-
-            string positiveBranch = string.Empty;
-            string negativeBranch = string.Empty;
             int fjumpLabel = GenerateUniqueLabel();
             int positiveEnd = GenerateUniqueLabel();
-            negativeBranch += (context.neg == null) ? "" : code.Get(context.neg);
-            positiveBranch += code.Get(context.pos);
-            code.Put(context, $"{condition}fjmp {fjumpLabel}\n{positiveBranch}jmp {positiveEnd}\nlabel {fjumpLabel}\n{negativeBranch}label {positiveEnd}\n");
+
+            var negativeBranch = (context.neg == null) ? string.Empty : code.Get(context.neg);
+            var positiveBranch = code.Get(context.pos);
+            code.Put(context, $"{condition}fjmp {fjumpLabel}\n" +   // if condition is false jump to else branch
+                $"{positiveBranch}jmp {positiveEnd}\n" +            // execute if branch and jump to end
+                $"label {fjumpLabel}\n" +                           // set else branch label
+                $"{negativeBranch}label {positiveEnd}\n");          // execute else branch and set end label
         }
         public override void ExitWhile([NotNull] project_grammarParser.WhileContext context)
         {
